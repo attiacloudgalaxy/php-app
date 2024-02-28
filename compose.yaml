@@ -5,26 +5,64 @@ services:
       context: .
     ports:
       - 9000:80
-  db:
-    image: postgres
-    restart: always
-    user: postgres
-    volumes:
-      - db-data:/var/lib/postgresql/data
+    depends_on:
+      db:
+        condition: service_healthy
+    secrets:
+      - db-password
     environment:
-      - POSTGRES_DB=example
-      - POSTGRES_PASSWORD_FILE=/run/secrets/db-password
+      - PASSWORD_FILE_PATH=/run/secrets/db-password
+      - DB_HOST=db
+      - DB_NAME=example
+      - DB_USER=root
+  db:
+    image: mariadb
+    restart: always
+    user: root
+    secrets:
+      - db-password
+    volumes:
+      - db-data:/var/lib/mysql
+    environment:
+      - MARIADB_ROOT_PASSWORD_FILE=/run/secrets/db-password
+      - MARIADB_DATABASE=example
     expose:
-      - 5432
+      - 3306
     healthcheck:
-      test: [ "CMD", "pg_isready" ]
+      test:  ["CMD", "/usr/local/bin/healthcheck.sh", "--su-mysql", "--connect",  "--innodb_initialized"]
       interval: 10s
       timeout: 5s
       retries: 5
-
 volumes:
   db-data:
-
 secrets:
   db-password:
     file: db/password.txt
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
